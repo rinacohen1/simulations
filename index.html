@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>שתי סימולציות גלגלות – קבועות מול נעות</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#f6f7fb;--card:#fff;--tx:#1d2433;--mut:#5d667a;--ac:#2563eb;--seg:#e8590c;--ln:#cfd5e3;--ok:#16a34a;--bad:#dc2626;--mass:#94a3b8}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10131a;--card:#1a1f2b;--tx:#e8ebf3;--mut:#9aa3b8;--ac:#6ea0ff;--seg:#ff9248;--ln:#394155;--ok:#4ade80;--bad:#f87171;--mass:#64748b}}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif;padding:10px}
+h1{font-size:1.15rem;margin:2px 0 8px}
+.two{max-width:1000px;margin:auto;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.card{background:var(--card);border:1px solid var(--ln);border-radius:14px;padding:10px;min-width:0}
+label{display:block;font-weight:600;margin:4px 0;font-size:.85rem}
+input[type=range]{width:100%;margin:0}
+.opts{display:flex;flex-wrap:wrap;gap:4px;margin:4px 0}
+button{padding:7px 8px;border-radius:9px;border:1px solid var(--ln);background:var(--bg);color:var(--tx);font-size:.82rem;cursor:pointer;flex:1 1 auto}
+button.on,button.main{background:var(--ac);color:#fff;border-color:var(--ac)}
+h2{font-size:.95rem;margin:0 0 6px}
+.set{border:1px solid var(--ln);border-radius:10px;padding:6px 8px;margin-bottom:6px}
+svg{width:100%;height:auto;display:block}
+table{width:100%;border-collapse:collapse;font-size:.78rem}
+td{padding:4px 2px;border-bottom:1px solid var(--ln)}
+td:last-child{font-weight:700;text-align:left;white-space:nowrap}
+.f{color:var(--mut);font-size:.7rem;direction:ltr;text-align:right;display:block}
+.st{margin-top:6px;padding:6px;border-radius:9px;font-weight:600;font-size:.8rem}
+.good{background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok)}
+.hard{background:color-mix(in srgb,var(--bad) 18%,transparent);color:var(--bad)}
+.sv{fill:var(--tx)}
+</style>
+</head>
+<body>
+<h1>⚙️ גלגלות קבועות מול גלגלות נעות – זו לצד זו</h1>
+<div class="two" id="root"></div>
+<script>
+const G=10,$=id=>document.getElementById(id),fmt=x=>Math.round(x*10)/10;
+const L=(a,b,c,d,col,w)=>`<line x1="${a}" y1="${b}" x2="${c}" y2="${d}" stroke="${col||'var(--seg)'}" stroke-width="${w||4}"/>`;
+const PU=(x,y,r,top)=>`<circle cx="${x}" cy="${y}" r="${r}" fill="var(--card)" stroke="var(--tx)" stroke-width="3"/><path d="M${x-r} ${y}A${r} ${r} 0 0 ${top?1:0} ${x+r} ${y}" fill="none" stroke="var(--seg)" stroke-width="4"/><circle cx="${x}" cy="${y}" r="3" fill="var(--tx)"/>`;
+const HG=(x,y,r)=>L(x,22,x,y-r,'var(--mut)');
+const T=(x,y,t,a,w)=>`<text x="${x}" y="${y}" text-anchor="${a||'start'}" class="sv" font-size="13" font-weight="${w||400}">${t}</text>`;
+const HAND=(x,y,F,up)=>`<circle cx="${x}" cy="${y}" r="9" fill="var(--ac)"/>`+T(x+14,y+5,`יד: ${fmt(F)} N ${up?'↑':'↓'}`,'start',700);
+const CEIL=`<defs><pattern id="h" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="8" stroke="var(--mut)" stroke-width="2"/></pattern></defs><rect x="10" y="8" width="260" height="14" fill="url(#h)" stroke="var(--mut)"/>`;
+const MASS=(x,y,m)=>{const z=30+m*.4;return `<rect x="${x-z/2}" y="${y}" width="${z}" height="${z}" rx="4" fill="var(--mass)" stroke="var(--tx)" stroke-width="2"/>`+T(x,y+z/2+5,m+' ק״ג','middle',700)+T(x,y+z+16,`W = ${m*G} N ↓`,'middle')};
+// lift = mass rise in px, tr = hand travel in px
+function drawA(k,m,F,lift,tr){
+ const by=285-lift;let s=CEIL;
+ if(k==0){const x=60,hy=by-120;return s+L(x,hy,x,by)+HAND(x,hy,F,1)+MASS(x,by,m)}
+ const xs=Array.from({length:k},(_,i)=>60+30*i),a=xs[0]-14,e=xs[k-1]+14,hy=130+tr;
+ s+=L(a,56,a,by)+L(e,56,e,hy);
+ for(let i=0;i<k-1;i++)s+=L(xs[i],42,xs[i+1],42);
+ xs.forEach(x=>s+=HG(x,56,14)+PU(x,56,14,1));
+ return s+HAND(e,hy,F)+MASS(a,by,m)}
+function drawB(j,m,F,lift,tr){
+ const n=2*j,X=i=>40+28*i,by=275-lift,hy=130+tr;let s=CEIL;
+ const bx=i=>(X(2*i)+X(2*i+1))/2,tops=[];
+ for(let i=0;i<j-1;i++)tops.push((X(2*i+1)+X(2*i+2))/2);
+ tops.push(X(n-1)+14);const free=X(n-1)+28;
+ s+=L(X(0),22,X(0),by);for(let i=1;i<n;i++)s+=L(X(i),56,X(i),by);
+ s+=L(free,56,free,hy);
+ tops.forEach(x=>s+=HG(x,56,14)+PU(x,56,14,1));
+ s+=L(bx(0),by,bx(j-1),by,'var(--tx)',3);
+ for(let i=0;i<j;i++)s+=PU(bx(i),by,14,0);
+ const mx=bx(j-1);
+ return s+L(mx,by,mx,by+26,'var(--tx)',3)+HAND(free,hy,F)+MASS(mx,by+26,m)}
+const SIMS=[
+ {P:'a',title:'א׳: גלגלות קבועות בלבד',labels:['בלי גלגלות','1 קבועה','2 קבועות','3 קבועות'],opt:2,
+  nOf:o=>1,cnt:o=>o,ceil:o=>o>0,draw:(o,m,F,l,t)=>drawA(o,m,F,l,t)},
+ {P:'b',title:'ב׳: גלגלות קבועות + נעות',labels:['נעה אחת (n=2)','שתי נעות (n=4)','שלוש נעות (n=6)'],opt:0,
+  nOf:o=>2*(o+1),cnt:o=>2*(o+1),ceil:o=>true,draw:(o,m,F,l,t)=>drawB(o+1,m,F,l,t)}];
+$('root').innerHTML=SIMS.map(S=>{const P=S.P;return `<div class="card"><h2>${S.title}</h2>
+<div class="set"><b style="font-size:.8rem">נתונים מקדימים</b>
+<label>מסת המשא: <span id="${P}mv"></span> ק״ג</label><input type="range" id="${P}m" min="1" max="100" value="60">
+<label>הכוח שלכם: <span id="${P}sv"></span> ק״ג</label><input type="range" id="${P}s" min="5" max="50" value="20">
+<label>גובה ההרמה: <span id="${P}hv"></span> מ׳</label><input type="range" id="${P}h" min="0.5" max="2" step="0.5" value="1">
+<label><input type="checkbox" id="${P}f"> חיכוך (5% בכל גלגלת)</label>
+<div class="opts"><button class="main" id="${P}go">▶ הפעל</button><button id="${P}rs">↺ איפוס</button></div></div>
+<label>מספר גלגלות:</label><div class="opts" id="${P}o"></div>
+<label style="font-weight:400">התקדמות ההרמה</label><input type="range" id="${P}p" min="0" max="100" value="0">
+<svg id="${P}svg" viewBox="0 0 280 440"></svg><table id="${P}t"></table><div class="st" id="${P}x"></div></div>`}).join('');
+SIMS.forEach(S=>{const P=S.P;let anim;
+ $(P+'o').innerHTML=S.labels.map((t,i)=>`<button data-i="${i}">${t}</button>`).join('');
+ const render=()=>{
+  const m=+$(P+'m').value,str=+$(P+'s').value,h=+$(P+'h').value,p=$(P+'p').value/100,n=S.nOf(S.opt);
+  $(P+'mv').textContent=m;$(P+'sv').textContent=str;$(P+'hv').textContent=h;
+  [...$(P+'o').children].forEach((b,i)=>b.classList.toggle('on',i==S.opt));
+  const fr=$(P+'f').checked,eta=fr?Math.pow(.95,S.cnt(S.opt)):1,W=m*G,F=W/(n*eta),hh=h*p;
+  const sc=Math.min(40,200/(n*h)),lift=hh*sc,tr=n*lift;
+  $(P+'svg').innerHTML=S.draw(S.opt,m,F,lift,tr);
+  const rows=[['משקל המשא',W+' N',`W = ${m}·${G}`],['קטעי חבל תומכים',n,'n'],['הכוח על היד',`${fmt(F)} N (≈${fmt(F/G)} ק״ג)`,'F = W / n'+(fr?' / η':'')],['מתח בכל קטע חבל',`${fmt(F)} N`,'T = F'],['סכום המתחים התומכים',`${fmt(n*F)} N`,fr?'n · T > W (חיכוך)':'n · T = W'],['מתח בכל קטע חבל',`${fmt(F)} N`,fr?'T ≈ F (בחיכוך: זה המתח בקצה היד)':'T = F = W / n'],['עומס על התקרה',`${fmt(S.ceil(S.opt)?W+F:0)} N`,S.ceil(S.opt)?'W + F':'ידנית – אין'],['גובה שהמשא עלה',`${fmt(hh)} מ׳`,'h'],['חבל שנמשך',`${fmt(n*hh)} מ׳`,`n · h = ${n}·${fmt(hh)}`],['עבודה: יד / משא',`${fmt(F*n*hh)} / ${fmt(W*hh)} J`,'F·d / W·h']];
+  $(P+'t').innerHTML=rows.map(r=>`<tr><td>${r[0]}<span class="f">${r[2]}</span></td><td>${r[1]}</td></tr>`).join('');
+  const ok=F/G<=str;$(P+'x').className='st '+(ok?'good':'hard');
+  $(P+'x').textContent=ok?`✅ היד מרגישה ${fmt(F/G)} ק״ג – אפשר להרים`:`⚠️ נדרשים ${fmt(F/G)} ק״ג – קשה מדי`};
+ $(P+'o').onclick=e=>{if(e.target.dataset.i){S.opt=+e.target.dataset.i;render()}};
+ ['m','s','h','f','p'].forEach(i=>$(P+i).oninput=render);
+ $(P+'rs').onclick=()=>{cancelAnimationFrame(anim);$(P+'p').value=0;render()};
+ $(P+'go').onclick=()=>{cancelAnimationFrame(anim);$(P+'p').value=0;const t0=performance.now();(function f(t){const x=Math.min(1,(t-t0)/3000);$(P+'p').value=x*100;render();if(x<1)anim=requestAnimationFrame(f)})(t0)};
+ render()});
+</script>
+</body>
+</html>
